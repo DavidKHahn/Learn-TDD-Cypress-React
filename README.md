@@ -164,3 +164,46 @@ We want the send button to be part of our NewMessageForm, so fixing this error i
                     </div>
                     );
                 }
+
+### Implementing Component Behavior
+
+Rerun the tests. Now we get a new kind of test failure:
+
+                expected '<input />' to have value '', but the value was 'New message'
+
+We’ve made it to our first assertion, which is that the message text box should be empty – but it isn’t. We haven’t yet added the behavior to our app to clear out the message text box.
+
+**Instead of adding the behavior directly, let’s step down from the “outside” level of end-to-end tests to an “inside” component test.** This allows us to more precisely specify the behavior of each piece. Also, since end-to-end tests are slow, component tests prevent us from having to write an end-to-end test for every rare edge case.
+
+Create a src/__tests__ folder, then create a file src/__tests__/NewMessageForm.spec.js and add the following:
+
+                import React from 'react';
+                import { render, fireEvent, cleanup} from '@testing-library/react';
+                import NewMessageForm from '../NewMessageForm';
+
+                    describe('<NewMessageForm />', () => {
+                        let getByTestId;
+
+                        afterEach(cleanup);
+
+                    describe('clicking the send button', () => {
+                        beforeEach(() => {
+                        ({ getByTestId } = render(<NewMessageForm />));
+
+                        fireEvent.change(
+                            getByTestId('messageText'),
+                            {
+                            target: {
+                                value: 'New message',
+                            },
+                            },
+                        );
+
+                        fireEvent.click(getByTestId('sendButton'));
+                        });
+
+                        it('clears the text field', () => {
+                        expect(getByTestId('messageText').value).toEqual('');
+                        });
+                    });
+                });
