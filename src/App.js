@@ -12,7 +12,7 @@ class App extends Component {
   }
 
   render() {
-    const { message } = this.state;
+    const { messages } = this.state;
     return (
       <div>
         <NewMessageForm onSend={this.handleSend} />
