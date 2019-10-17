@@ -31,7 +31,7 @@ describe('<NewMessageForm />', () => {
     });
 
     it('calls the send handler', () => {
-        expect(sendHandler).toHaveBeenCalledWith('New Message');
+        expect(sendHandler).toHaveBeenCalledWith('New message');
     });
   });
 });
