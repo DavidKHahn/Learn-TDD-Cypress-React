@@ -207,3 +207,60 @@ Create a src/__tests__ folder, then create a file src/__tests__/NewMessageForm.s
                         });
                     });
                 });
+
+React Testing Library has a different API than Cypress, but a lot of the test seems the same as the end-to-end test: we still enter a new message and click the send button. But this is testing something very different. Instead of testing the whole app running together, we’re testing just the NewMessageForm by itself.
+
+Run yarn test to run the component test. We get the same error as we did with the end-to-end test:
+
+                Expected value to equal:
+                    ""
+                Received:
+                    "New message"
+
+Now, we can add the behavior to the component to get this test to pass. To accomplish this, we’ll need to make the input a controlled component, so its text is available in the parent component’s state:
+
+                export default class NewMessageForm extends Component {
+                +  state = { inputText: '' }
+                +
+                +  handleTextChange = (event) => {
+                +    this.setState({ inputText: event.target.value });
+                +  }
+                +
+                render() {
+                +    const { inputText } = this.state;
+                    return (
+                    <div>
+                        <input
+                        type="text"
+                        data-testid="messageText"
+                +          value={inputText}
+                +          onChange={this.handleTextChange}
+                        />
+                        <button
+                        data-testid="sendButton"
+                        >
+
+Next, we want to clear out inputText when the send button is clicked:
+
+                handleTextChange = (event) => {
+                    this.setState({ inputText: event.target.value });
+                }
+
+                +  handleSend = () => {
+                +    this.setState({ inputText: '' });
+                +  }
+                +
+                render() {
+                ...
+                        <button
+                        data-testid="sendButton"
+                +          onClick={this.handleSend}
+                        >
+                        Send
+                        </button>
+
+Rerun the component test and it passes. **Once a component test passes, step back up to the outer end-to-end test to see what the next error is.** Rerun creating_a_message.spec.js. Now our final assertion fails:
+
+                Expected to find content: 'New message' but never did.
+
+
