@@ -263,4 +263,78 @@ Rerun the component test and it passes. **Once a component test passes, step bac
 
                 Expected to find content: 'New message' but never did.
 
+Now, finally, the test will drive us to implement the real meat of our feature: storing the message entered and displaying it.
 
+The NewMessageForm won’t be responsible for displaying this message, though: we’ll create a separate MessageList component that also exists in the parent App component. The way we can send data to the parent component is by taking in an event handler and calling it.
+
+To add this event handler behavior to NewMessageForm, we want to step back down to the component test. In this case, the component test won’t be asserting exactly the same thing as the end-to-end test. The end-to-end test is looking for the ‘New message’ content on the screen, but the component test will only be asserting the behavior that the NewMessageForm component is responsible for: that it calls the event handler.
+
+Add another test case to NewMessageForm.spec.js:
+
+                afterEach(cleanup);
+
+                describe('clicking the send button', () => {
+                +    let sendHandler;
+                +
+                    beforeEach(() => {
+                +      sendHandler = jest.fn();
+                -      ({ getByTestId } = render(<NewMessageForm />));
+                +      ({ getByTestId } = render(<NewMessageForm onSend={sendHandler} />));
+
+                    fireEvent.change(
+                ...
+                    it('clears the text field', () => {
+                    expect(getByTestId('messageText').value).toEqual('');
+                    });
+                +
+                +    it('calls the send handler', () => {
+                +      expect(sendHandler).toHaveBeenCalledWith('New message');
+                +    });
+                });
+                });
+
+Notice that we make one assertion per test in component tests. Having separate test cases for each behavior of the component makes it easy to understand what it does, and easy to see what went wrong if one of the assertions fails. The beforeEach block will run through the same steps for each of the two test cases below.
+
+You may recall that this isn’t what we did in the end-to-end test, though. Generally you make multiple assertions per test in end-to-end tests. Why? End-to-end tests are slower, so the overhead of the repeating the steps would significantly slow down our suite as it grows. In fact, larger end-to-end tests tend to turn into “feature tours:” you perform some actions, do some assertions, perform some more actions, do more assertions, etc.
+
+Run the component test again. You’ll see the “clears the text field” test pass, and the new ‘emits the “send” event’ test fail with the error:
+
+                Expected mock function to have been called with:
+                ["New message"]
+                But it was not called.
+
+So the sendHandler isn’t being called. Let’s fix that:
+
+                handleSend = () => {
+                +    const { inputText } = this.state;
+                +    const { onSend } = this.props;
+                +
+                +    onSend(inputText);
+                +
+                    this.setState({ inputText: '' });
+                }
+
+Now the component test passes. That’s great! Now we step back up again to run our feature test and we get:
+
+                Uncaught TypeError: onSend is not a function
+
+We changed NewMessageForm to use an onSend event handler, but we haven’t passed one to our NewMessageForm in our production code. Let’s add an empty one to get past this error:
+
+                class App extends Component {
+                +  handleSend = (newMessage) => {
+                +  }
+                +
+                render() {
+                    return (
+                    <div>
+                -        <NewMessageForm />
+                +        <NewMessageForm onSend={this.handleSend} />
+                    </div>
+                    );
+                }
+
+Rerun the e2e test and we get:
+
+                Expected to find content: ‘New message’ but never did.
+
+We no longer get the onSend error–now we’re back to the same assertion failure, because we’re still not displaying the message. But we’re a step closer!
